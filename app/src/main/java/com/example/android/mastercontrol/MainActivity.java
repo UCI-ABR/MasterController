@@ -152,7 +152,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
-        receive_from_m();
+
+
+
+        fromMinion = ;
+
+        receive_from_m(fromMinion);
         Robot assign_mission;
         while(!free_robots.isEmpty()){
             assign_mission=free_robots.pop();
@@ -163,6 +168,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
         updateDisplay();
+
+
+        send_to_m();
+
+
+
 
     }
 
@@ -177,13 +188,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 /**************************************************************************************************/
     //receives info in form of string & parses to variables' appropriate types
-    void receive_from_m () {
-        String string_name = fromMinion.substring(fromMinion.indexOf("NAME"),fromMinion.indexOf("GPS")),
-                string_gps = fromMinion.substring(fromMinion.indexOf("GPS"),fromMinion.indexOf("MANN")),
-                string_mann = fromMinion.substring(fromMinion.indexOf("MANN"),fromMinion.indexOf("SEARCH")),
-                string_search = fromMinion.substring(fromMinion.indexOf("SEARCH"),fromMinion.indexOf("LIDAR")),
-                string_lidar = fromMinion.substring(fromMinion.indexOf("LIDAR"),fromMinion.indexOf("LGPS")),
-                string_lidarGPS = fromMinion.substring(fromMinion.indexOf("LGPS"),fromMinion.length());
+    void receive_from_m (String data) {
+        //Add actual receive code here (receives string)
+
+        String string_name = data.substring(data.indexOf("NAME"),data.indexOf("GPS")),
+                string_gps = data.substring(data.indexOf("GPS"),data.indexOf("MANN")),
+                string_mann = data.substring(data.indexOf("MANN"),data.indexOf("SEARCH")),
+                string_search = data.substring(data.indexOf("SEARCH"),data.indexOf("LIDAR")),
+                string_lidar = data.substring(data.indexOf("LIDAR"),data.indexOf("LGPS")),
+                string_lidarGPS = data.substring(data.indexOf("LGPS"),data.length());
 
         //get GPS coordinates from message string
         gps_coords = getCoords(string_gps);
