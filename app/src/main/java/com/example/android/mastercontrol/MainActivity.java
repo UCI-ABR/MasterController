@@ -31,6 +31,7 @@ import static com.example.android.mastercontrol.MainActivity.Robots.CARLY;
 import static com.example.android.mastercontrol.MainActivity.Robots.DOC;
 import static com.example.android.mastercontrol.MainActivity.Robots.MR;
 import static com.example.android.mastercontrol.MainActivity.Robots.MRS;
+import static java.util.Arrays.asList;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -68,12 +69,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     double[] gps_coords;    //initialize minion gps
 
     boolean initialFieldScan = true,
+            isObstacleFound = false,
             isMannequinFound = false;
 
     double[] destinationLoc = new double[2];
 
     double[][] gpsList = new double[25][2];
     double[][] searchingList = new double[25][2];
+    //ArrayList<double[]>searchingList=new ArrayList<double[]>(25);
     double[][] confirmedList = new double[25][2];
 
 
@@ -152,12 +155,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
 
-
-
-
-        fromMinion = ;
-
-        receive_from_m(fromMinion);
+        receive_from_m();       //place string from wifi network in function here
         Robot assign_mission;
         while(!free_robots.isEmpty()){
             assign_mission=free_robots.pop();
@@ -168,12 +166,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
         updateDisplay();
-
-
-        send_to_m();
-
-
-
 
     }
 
@@ -186,13 +178,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         TextView oderSummaryTextView = (TextView) findViewById(R.id.gps_string_tv);
         oderSummaryTextView.setText(message);
     }
-/**************************************************************************************************/
+    /**************************************************************************************************/
     //receives info in form of string & parses to variables' appropriate types
     void receive_from_m (String data) {
-        //Add actual receive code here (receives string)
-
         String string_name = data.substring(data.indexOf("NAME"),data.indexOf("GPS")),
-                string_gps = data.substring(data.indexOf("GPS"),data.indexOf("MANN")),
+                string_gps = data.substring(data.indexOf("GPS"),data.indexOf("OBS")),
+                string_obs = data.substring(data.indexOf("OBS"),data.indexOf("MANN")),
                 string_mann = data.substring(data.indexOf("MANN"),data.indexOf("SEARCH")),
                 string_search = data.substring(data.indexOf("SEARCH"),data.indexOf("LIDAR")),
                 string_lidar = data.substring(data.indexOf("LIDAR"),data.indexOf("LGPS")),
@@ -200,6 +191,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         //get GPS coordinates from message string
         gps_coords = getCoords(string_gps);
+
+        //get obstacle boolean
+        isObstacleFound = string_obs.contains("true");
 
         //get mannequin boolean
         isMannequinFound = string_mann.contains("true");
@@ -209,43 +203,48 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         switch (string_name) {
             case "DOC":
-                minion = Robots.DOC;
                 robot = doc;
+                doc.setLocation(gps_coords);
+                doc.setStatus(isMannequinFound);
                 break;
             case "MR":
-                minion = Robots.MR;
                 robot = mr;
+                mr.setLocation(gps_coords);
+                mr.setStatus(isMannequinFound);
                 break;
             case "MRS":
-                minion = Robots.MRS;
                 robot = mrs;
+                mrs.setLocation(gps_coords);
+                mrs.setStatus(isMannequinFound);
                 break;
             case "CARLITO":
-                minion = Robots.CARLITO;
                 robot = carlito;
+                carlito.setLocation(gps_coords);
+                carlito.setStatus(isMannequinFound);
                 break;
             case "CARLOS":
-                minion = Robots.CARLOS;
                 robot = carlos;
+                carlos.setLocation(gps_coords);
+                carlos.setStatus(isMannequinFound);
                 break;
             case "CARLY":
-                minion = Robots.CARLY;
                 robot = carly;
+                carly.setLocation(gps_coords);
+                carly.setStatus(isMannequinFound);
                 break;
             case "CARLA":
-                minion = Robots.CARLA;
                 robot = carla;
+                carla.setLocation(gps_coords);
+                carla.setStatus(isMannequinFound);
                 break;
             case "CARLETON":
-                minion = Robots.CARLETON;
                 robot = carleton;
+                carleton.setLocation(gps_coords);
+                carleton.setStatus(isMannequinFound);
                 break;
             default:
                 Log.i("ERROR","Invalid robot name. Refer to Robot name list in code.");
         }
-
-        robot.setLocation(gps_coords);
-        robot.setStatus(isMannequinFound);
 
         /*
         //get LIDAR boolean
@@ -275,15 +274,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         } else {
             if (isMannequinFound) {
                 // match GPS coords that were found w/ coords on the list
-                for (int i=0; i<gpsList[0].length; i++) {
-                    if (gpsList[i][0] == gps_coords[0] && gpsList[i][1] == gps_coords[1]) {
+                for (int i=0; i<searchingList.length; i++) {
+                    if (searchingList[i][0] != 0 && searchingList[i][1] != 0 && searchingList[i][0] >= gps_coords[0]-0.000008993     && searchingList[i][0] <= gps_coords[0]+0.000008993   && searchingList[i][1] >= gps_coords[1]-0.000008993 &&searchingList[i][1] <= gps_coords[1]+0.000008993) {
                         // add GPS coords to confirmed list
-                        confirmedList[i][0] = gpsList[i][0];
-                        confirmedList[i][1] = gpsList[i][1];
+                        confirmedList[i][0] = searchingList[i][0];
+                        confirmedList[i][1] = searchingList[i][1];
 
-                        // erase GPS coords from unconfirmed list
-                        gpsList[i][0] = 0;
-                        gpsList[i][1] = 0;
+                        // erase GPS coords from unconfirmed list///////////////////////////////////////////////////////////////////
+                        searchingList[i][0] = 0;
+                        searchingList[i][1] = 0;
+
                     }
                 }
 
@@ -306,21 +306,26 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     void setClosestObjectDistance(Robot name) {
         double[] minLoc = new double[2];
-        double min = 0;
+        double min = 100000.0;//should be large, not small. I am assuming the position data is positive
 
         // Calculate distances of objects from robot's current location
         for (int i=0; i<25; i++) {
-            if(distanceFormula(name.getRobotLocation(),gpsList[i]) < min){
+            if(distanceFormula(name.getRobotLocation(),gpsList[i]) < min && distanceFormula(name.getRobotLocation(),gpsList[i])<100000.0){//the second condition limit the min to be impossible location
                 min = distanceFormula(name.getRobotLocation(),gpsList[i]);
                 minLoc = gpsList[i];
             }
         }
 
         name.setDestination(minLoc);
-        if(Arrays.asList(gpsList).contains(minLoc)){
-            gpsList.ind
+        if(asList(gpsList).contains(minLoc)){
+
+            //assume there is no duplicate location in gpsList
+            int index=Arrays.asList(gpsList).indexOf(minLoc);
+            searchingList[index]=gpsList[index];
+            double[] never_reach_location={100000.0,100000.0};//assume this will never be reached, same purpose with remove the location from array
+            gpsList[index]=never_reach_location;
         }
-        gpsList.
+
     }
 
     double distanceFormula(double[] gps1, double[] gps2) {
@@ -401,4 +406,3 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 }
-
